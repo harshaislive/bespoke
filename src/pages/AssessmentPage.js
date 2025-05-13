@@ -161,15 +161,15 @@ const AssessmentPage = () => {
   }, []);
 
   // System Prompt for OpenAI (embedding the user-provided prompt here)
-  const openAISystemPromptTemplate = `You are the Bespoke Agent for Beforest, tasked with generating 5 situation-based questions to evaluate employees' communication skills in converting well-informed prospects into members of the Beforest community. Use the knowledge base documents (Beforest BMC and Brand Guidelines) provided below to create realistic scenarios that reflect the final concerns or objections prospects might raise before joining, as well as Beforest’s mission of inspiring sustainable living by transforming landscapes.
+  const openAISystemPromptTemplate = `You are the Bespoke Agent for Beforest, tasked with generating 5 situation-based questions to evaluate employees' communication skills in converting well-informed prospects into members of the Beforest community. Use the knowledge base documents (Beforest BMC and Brand Guidelines) provided below to create realistic scenarios that reflect the final concerns or objections prospects might raise before joining, as well as Beforest's mission of inspiring sustainable living by transforming landscapes.
 
 ### Instructions:
 - Generate exactly 5 situation-based questions.
-- Each question should present a realistic scenario involving a prospect who has already attended a one-on-one call, received detailed information about Beforest (e.g., collective ownership, pricing, brochure), and has clarity on Beforest’s mission and offerings, but is hesitant to join due to final concerns or objections.
-- Base scenarios on the BMC’s customer segments (e.g., retirees/empty nesters, nature enthusiasts, urban dwellers seeking sustainable lifestyles) and their potential hesitations (e.g., financial commitment, community dynamics, long-term value).
-- Incorporate Beforest’s offerings, such as the BeWild produce arm (organic coffee, rice, honey, etc.) or Belong barefoot luxury experiences (glamping, nature walks), where relevant.
-- Reflect the Brand Guidelines’ tone: assertive (50%), authentic (30%), approachable (20%). Avoid superlatives, hyperbole, or exaggeration; use simple, fact-based language.
-- Ensure questions test the employee’s ability to address these concerns using Beforest’s value propositions (e.g., trusted partnerships, collective ownership benefits, legacy protection, inclusive community) in a transparent, community-focused manner, ultimately convincing the prospect to join.
+- Each question should present a realistic scenario involving a prospect who has already attended a one-on-one call, received detailed information about Beforest (e.g., collective ownership, pricing, brochure), and has clarity on Beforest's mission and offerings, but is hesitant to join due to final concerns or objections.
+- Base scenarios on the BMC's customer segments (e.g., retirees/empty nesters, nature enthusiasts, urban dwellers seeking sustainable lifestyles) and their potential hesitations (e.g., financial commitment, community dynamics, long-term value).
+- Incorporate Beforest's offerings, such as the BeWild produce arm (organic coffee, rice, honey, etc.) or Belong barefoot luxury experiences (glamping, nature walks), where relevant.
+- Reflect the Brand Guidelines' tone: assertive (70%), authentic (30%). Avoid superlatives, hyperbole, or exaggeration; use simple, fact-based language. Be conversational but direct in your questions.
+- Ensure questions test the employee's ability to address these concerns using Beforest's value propositions (e.g., trusted partnerships, collective ownership benefits, legacy protection, inclusive community) in a transparent, community-focused manner, ultimately convincing the prospect to join.
 - Format each question as a string in a JSON array, e.g., ["Question 1", "Question 2", ..., "Question 5"].
 - Use these user generated questions which are asked by realtime users on website using our chatbot as base and strictly only use if they are relevant. If they are relevant pls ensure you give weightage to that question and follow rules mentioned: {{ $json.User_message }}
 
@@ -177,8 +177,8 @@ const AssessmentPage = () => {
 {{DOCUMENT_CONTEXT}}
 
 ### Examples of Situation-Based Questions (use these only as a guide for structure, not content if context differs):
-- "A retiree prospect who has attended a one-on-one call says, 'I understand the benefits of collective ownership, but I’m worried about the financial commitment for my family in the long term.' How do you address their concern by highlighting Beforest’s protection of legacy and safety of diversification in a transparent, fact-based way?"
-- "A nature enthusiast prospect who is familiar with Beforest’s mission says, 'I’m interested in joining, but what if I don’t get along with the other members of the collective?' How do you reassure them about Beforest’s inclusive community and one-to-one relationships while maintaining an authentic tone?"
+- "A retiree prospect who has attended a one-on-one call says, 'I understand the benefits of collective ownership, but I'm worried about the financial commitment for my family in the long term.' How do you address their concern by highlighting Beforest's protection of legacy and safety of diversification in a transparent, fact-based way?"
+- "A nature enthusiast prospect who is familiar with Beforest's mission says, 'I'm interested in joining, but what if I don't get along with the other members of the collective?' How do you reassure them about Beforest's inclusive community and one-to-one relationships while maintaining an authentic tone?"
 
 Generate the 5 situation-based questions now.`;
 
@@ -253,7 +253,7 @@ Generate the 5 situation-based questions now.`;
       
       console.log('Calling OpenAI API to generate assessment questions...');
       const openAICompletion = await openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
+        model: "gpt-4o",
         messages: [{ role: "system", content: finalSystemPrompt }],
       });
 
