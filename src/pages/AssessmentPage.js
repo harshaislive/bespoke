@@ -194,11 +194,6 @@ Generate the 5 situation-based questions now.`;
 
   // Note: We've replaced this timer countdown effect with the new time elapsed effect above
 
-  const handleUserInfoSubmit = (info) => {
-    setUserInfo(info);
-    // Don't call handleStartAssessment directly, UserInfoForm's onSubmit will do that or a dedicated start button
-  };
-
   const handleStartAssessment = async (submittedUserInfo) => {
     setIsLoadingAssessment(true);
     setIsSubmitting(true);

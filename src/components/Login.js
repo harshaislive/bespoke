@@ -5,7 +5,7 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { signInWithMagicLink, loading, error } = useAuth();
+  const { signInWithMagicLink } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
