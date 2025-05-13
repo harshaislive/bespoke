@@ -1,0 +1,17 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Architecture
+
+The architecture is modular and event-driven, as described in [Beforest Bespoke Engine Documentation.md](mdc:Beforest Bespoke Engine Documentation.md):
+
+- **Frontend**: SPA (React) interacts with Supabase for data and authentication
+- **Backend**: Supabase handles database, auth, storage, and real-time updates
+- **Webhooks**: Used for question generation and email delivery, triggered by database events
+- **Database Schema**: Users, Sessions, Feedback tables with clear relationships
+- **Security**: Row-Level Security (RLS) and Supabase Auth for access control
+
+See the documentation for schema diagrams, workflow, and event triggers.
+

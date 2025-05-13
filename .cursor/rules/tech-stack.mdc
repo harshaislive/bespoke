@@ -1,0 +1,15 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Tech Stack
+
+The project uses a modern web-based tech stack as described in [Beforest Bespoke Engine Documentation.md](mdc:Beforest Bespoke Engine Documentation.md):
+
+- **Frontend**: React, Tailwind CSS, React Router, html2pdf.js
+- **Backend**: Supabase (Auth, database, storage, real-time)
+- **Other Tools**: JavaScript (ES6+), Babel, CDN hosting (jsDelivr)
+
+Refer to the documentation for further details on integration and usage.
+

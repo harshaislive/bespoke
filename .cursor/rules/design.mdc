@@ -1,0 +1,26 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Design
+
+The UI and UX design principles are detailed in [Beforest Bespoke Engine Documentation.md](mdc:Beforest Bespoke Engine Documentation.md) and visual brand guidelines in [brand_doc.md](mdc:brand_doc.md):
+
+- User-centric, step-by-step assessment flow
+- Clean, modern interface with clear navigation (question navigation, timer, summary)
+- Responsive design for usability across devices
+- Emphasis on clarity, feedback, and ease of use
+
+## Brand Guidelines (see [brand_doc.md](mdc:brand_doc.md))
+- **Logo:** Use only approved logo, scale appropriately, do not distort or alter colors/effects. Logo: https://beforest.co/wp-content/uploads/2024/10/23-Beforest-Black-with-Tagline.png
+- **Color Palette:** Use primary, secondary, accent, and neutral colors as specified. Pair colors as recommended.
+- **Typography:** Use ABC Arizona Flare (Serif) for headlines and ABC Arizona Flare (Sans Serif) for body/UI, following the type hierarchy.
+- **Visual Style:** Assertive, authentic, approachable—deep earthy tones, muted natural colors, balanced for accessibility.
+
+Refer to [brand_doc.md](mdc:brand_doc.md) for full details and updates on brand identity.
+
+See the documentation for UI component breakdown and sample HTML/CSS.
+
+
+

@@ -1,0 +1,16 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Simplicity
+
+The project emphasizes simplicity in both implementation and user experience, as described in [Beforest Bespoke Engine Documentation.md](mdc:Beforest Bespoke Engine Documentation.md):
+
+- Minimal tech stack for rapid deployment and reliability
+- Straightforward assessment workflow (session creation, question answering, feedback)
+- Automated operations via webhooks
+- Clear, concise UI with minimal distractions
+
+Refer to the documentation for examples and rationale.
+
