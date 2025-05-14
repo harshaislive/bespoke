@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 // If logo download worked, uncomment this line
@@ -14,7 +14,7 @@ const Header = () => {
   const isAssessmentPage = location.pathname === '/';
   
   // Scroll handler for auto-hiding header on mobile
-  const handleScroll = () => {
+  const handleScroll = useCallback(() => {
     const currentScrollY = window.scrollY;
     
     if (currentScrollY > lastScrollY && currentScrollY > 50) {
@@ -26,7 +26,7 @@ const Header = () => {
     }
     
     setLastScrollY(currentScrollY);
-  };
+  }, [lastScrollY]);
   
   useEffect(() => {
     // Add scroll event listener
@@ -36,7 +36,7 @@ const Header = () => {
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [lastScrollY]);
+  }, [handleScroll]);
 
   const handleSignOut = async () => {
     await signOut();
