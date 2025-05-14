@@ -39,6 +39,22 @@ const AssessmentPage = () => {
   // New state for collapsible questions in summary
   const [expandedQuestions, setExpandedQuestions] = useState({});
   
+  // New state for tracking validation
+  const [incompleteQuestions, setIncompleteQuestions] = useState([]);
+  const [showValidationModal, setShowValidationModal] = useState(false);
+  
+  // For swipe navigation
+  const touchStartX = useRef(null);
+  const touchEndX = useRef(null);
+  const mainRef = useRef(null);
+  
+  // Configure touch threshold for swipe (in pixels)
+  const MIN_SWIPE_DISTANCE = 50;
+
+  // Add these derived values
+  const isFirstQuestion = currentQuestionIndex === 0;
+  const isLastQuestion = currentQuestionIndex === (questions.length - 1);
+
   // Function to toggle question expansion
   const toggleQuestionExpansion = (index) => {
     setExpandedQuestions(prev => ({
@@ -372,7 +388,26 @@ Remember, your output must be a valid JSON array of strings in this exact format
     }));
   };
 
+  // Add validation function to check for empty answers
+  const validateAnswers = () => {
+    if (!questions || questions.length === 0) return true;
+    
+    const unanswered = questions.filter((question, index) => {
+      const answer = answers[question.text];
+      return !answer || answer.trim() === '';
+    });
+    
+    setIncompleteQuestions(unanswered);
+    return unanswered.length === 0;
+  };
+
   const handleAssessmentCompletion = async () => {
+    // Check for empty answers before completing
+    if (!validateAnswers()) {
+      setShowValidationModal(true);
+      return;
+    }
+    
     setIsTimerRunning(false);
     setAssessmentCompleted(true);
     setIsLoadingAssessment(true); // Show loading for report generation
@@ -432,6 +467,59 @@ Remember, your output must be a valid JSON array of strings in this exact format
     html2pdf().set(options).from(element).save();
   };
 
+  // Add event listeners for touch navigation
+  useEffect(() => {
+    const handleTouchStart = (e) => {
+      touchStartX.current = e.touches[0].clientX;
+    };
+    
+    const handleTouchEnd = (e) => {
+      touchEndX.current = e.changedTouches[0].clientX;
+      handleSwipe();
+    };
+    
+    const handleSwipe = () => {
+      if (!assessmentStarted || assessmentCompleted) return;
+      
+      const swipeDistance = touchEndX.current - touchStartX.current;
+      
+      if (Math.abs(swipeDistance) < MIN_SWIPE_DISTANCE) return;
+      
+      if (swipeDistance > 0) {
+        // Swiped right - go to previous question
+        if (currentQuestionIndex > 0) {
+          // Trigger haptic feedback if available
+          if (window.navigator.vibrate) {
+            window.navigator.vibrate(20);
+          }
+          setCurrentQuestionIndex(currentQuestionIndex - 1);
+        }
+      } else {
+        // Swiped left - go to next question
+        if (currentQuestionIndex < questions.length - 1) {
+          // Trigger haptic feedback if available
+          if (window.navigator.vibrate) {
+            window.navigator.vibrate(20);
+          }
+          setCurrentQuestionIndex(currentQuestionIndex + 1);
+        }
+      }
+    };
+    
+    const element = mainRef.current;
+    if (element) {
+      element.addEventListener('touchstart', handleTouchStart, { passive: true });
+      element.addEventListener('touchend', handleTouchEnd, { passive: true });
+    }
+    
+    return () => {
+      if (element) {
+        element.removeEventListener('touchstart', handleTouchStart);
+        element.removeEventListener('touchend', handleTouchEnd);
+      }
+    };
+  }, [currentQuestionIndex, assessmentStarted, assessmentCompleted, questions.length]);
+
   // Display loading indicator
   if (isLoadingAssessment) {
     return <AssessmentLoading />;
@@ -462,87 +550,89 @@ Remember, your output must be a valid JSON array of strings in this exact format
   // Assessment summary after completion
   if (assessmentCompleted) {
     return (
-      <div className="min-h-screen bg-offWhite p-3 md:p-4 overflow-hidden">
+      <div className="min-h-screen bg-offWhite p-3 md:p-4 overflow-y-auto">
         <div className="max-w-4xl mx-auto h-full flex flex-col">
-          <div ref={summaryRef} className="bg-white rounded-xl shadow-lg p-3 md:p-4 flex-1 overflow-y-auto border-t-4 border-richRed">
-            <h1 className="text-xl md:text-2xl font-bold text-forestGreen mb-1 text-center">Assessment Completed!</h1>
-            <p className="text-charcoalGray mb-3 text-center text-sm md:text-base">Thank you, {userInfo.name}, for completing the assessment.</p>
-            
-            {isDemoMode && (
-              <div className="bg-gray-100 p-2 md:p-3 rounded-lg mb-3 text-center">
-                <p className='text-xs md:text-sm text-gray-600'>
-                  (Demo Mode)
-                  {error && error.includes('OpenAI API key is missing') && " - OpenAI features disabled."}
-                  {error && error.includes('Document context missing') && " - Knowledge base features limited."}
-                </p>
+          <div ref={summaryRef} className="bg-white rounded-xl shadow-lg p-3 md:p-4 flex-1 overflow-y-auto border-t-4 border-richRed mb-4">
+            <div className="mb-4 pb-4 border-b border-softGray">
+              <h2 className="text-xl md:text-2xl font-bold text-forestGreen font-serif mb-2">Assessment Summary</h2>
+              <div className="flex flex-wrap gap-3 text-sm">
+                <div className="bg-softGray px-3 py-1.5 rounded-full text-darkEarth">
+                  <span className="font-medium">Name:</span> {userInfo.name}
+                </div>
+                {userInfo.team && (
+                  <div className="bg-softGray px-3 py-1.5 rounded-full text-darkEarth">
+                    <span className="font-medium">Team:</span> {userInfo.team}
+                  </div>
+                )}
+                <div className="bg-softGray px-3 py-1.5 rounded-full text-darkEarth">
+                  <span className="font-medium">Completed in:</span> {Math.floor(timeElapsed / 60)}m {timeElapsed % 60}s
+                </div>
               </div>
-            )}
+            </div>
             
-            <div className="mb-4">
-              <h2 className="text-md md:text-lg font-serif text-darkEarth mb-2 pb-1 border-b border-softGray">Your Response Summary</h2>
-              
+            <div className="space-y-6">
               {questions.map((question, index) => (
-                <div key={index} className="mb-2 md:mb-3 border border-softGray rounded-lg overflow-hidden">
-                  <button 
+                <div 
+                  key={index}
+                  className="pb-4 border-b border-softGray last:border-b-0"
+                >
+                  <div
+                    className="flex justify-between items-start cursor-pointer"
                     onClick={() => toggleQuestionExpansion(index)}
-                    className="w-full text-left p-2 md:p-3 bg-offWhite flex items-start justify-between hover:bg-softGray transition-colors duration-200"
                   >
-                    <div className="flex items-start">
-                      <span className="flex-shrink-0 w-6 h-6 bg-forestGreen text-white rounded-full flex items-center justify-center mr-2 font-bold text-sm mt-0.5">
+                    <div className="flex items-start mb-2">
+                      <span className="flex-shrink-0 w-6 h-6 md:w-7 md:h-7 bg-forestGreen text-white rounded-full flex items-center justify-center mr-2 font-medium text-sm">
                         {index + 1}
                       </span>
-                      <h3 className="text-darkEarth font-medium text-sm md:text-base flex-1 pr-2">
-                        {question.text ? 
-                          (question.text.length > 80 ? 
-                            `${question.text.substring(0, 80)}...` : 
-                            question.text) : 
-                          `Question ${index + 1}`}
+                      <h3 className="font-serif text-sm md:text-base text-darkEarth font-medium pr-6">
+                        {question.text}
                       </h3>
                     </div>
-                    <svg 
-                      className={`w-5 h-5 text-charcoalGray transition-transform duration-200 ${expandedQuestions[index] ? 'transform rotate-180' : ''}`} 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24" 
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-                    </svg>
-                  </button>
+                    <div className="text-charcoalGray transition-transform duration-200">
+                      {expandedQuestions[index] ? (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7"></path>
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                      )}
+                    </div>
+                  </div>
                   
                   {expandedQuestions[index] && (
-                    <div className="p-3 border-t border-softGray">
-                      <p className="text-sm md:text-base text-darkEarth font-medium mb-2">
-                        {question.text}
+                    <div className="ml-8 mr-2 mt-2 bg-softGray bg-opacity-30 p-3 rounded-lg text-sm md:text-base">
+                      <p className="whitespace-pre-wrap">
+                        {answers[question.text]}
                       </p>
-                      <div className="bg-white p-2 md:p-3 rounded border border-softGray">
-                        <p className="text-charcoalGray whitespace-pre-wrap text-sm max-h-48 overflow-y-auto">
-                          {answers[question.text] || <span className="italic text-gray-400">No answer provided</span>}
-                        </p>
-                      </div>
                     </div>
                   )}
                 </div>
               ))}
             </div>
+          </div>
+          
+          <div className="sticky bottom-4 left-0 right-0 flex flex-col md:flex-row gap-2 md:gap-3 justify-center z-10">
+            <button
+              onClick={handleDownloadPDF}
+              className="bg-forestGreen text-white py-3 px-4 rounded-lg font-bold flex items-center justify-center shadow-md hover:bg-opacity-90 transition-colors duration-200"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+              </svg>
+              Download PDF
+            </button>
             
-            <div className="flex flex-col md:flex-row justify-center space-y-3 md:space-y-0 md:space-x-4 pb-4 md:pb-0">
-              <button 
-                onClick={handleTryAgain} 
-                className="px-6 py-3 rounded-lg bg-forestGreen text-white font-bold shadow-md hover:bg-opacity-90 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-forestGreen focus:ring-opacity-50 text-sm md:text-base"
-              >
-                Start New Assessment
-              </button>
-              <button 
-                onClick={handleDownloadPDF} 
-                className="px-6 py-3 rounded-lg bg-richRed text-white font-bold shadow-md hover:bg-opacity-90 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-richRed focus:ring-opacity-50 flex items-center justify-center text-sm md:text-base"
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-                Download PDF
-              </button>
-            </div>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-darkEarth text-white py-3 px-4 rounded-lg font-bold flex items-center justify-center shadow-md hover:bg-opacity-90 transition-colors duration-200"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              Start New Assessment
+            </button>
           </div>
         </div>
       </div>
@@ -568,17 +658,81 @@ Remember, your output must be a valid JSON array of strings in this exact format
         onQuestionSelect={setCurrentQuestionIndex}
         onComplete={handleAssessmentCompletion} 
         isCompleted={assessmentCompleted}
+        incompleteQuestions={incompleteQuestions}
       />
-      <main className="flex-1 p-3 md:p-4 overflow-y-auto pb-20 md:pb-4">
+      
+      {/* Validation Modal */}
+      {showValidationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-lg p-5 max-w-sm w-full shadow-xl">
+            <h3 className="text-lg font-bold text-richRed mb-2">Incomplete Answers</h3>
+            <p className="text-sm text-charcoalGray mb-4">
+              Please complete all questions before submitting your assessment.
+            </p>
+            <div className="max-h-40 overflow-y-auto mb-4">
+              <ul className="list-disc pl-5 space-y-1">
+                {incompleteQuestions.map((q, i) => (
+                  <li key={i} className="text-sm text-darkEarth">
+                    Question {questions.findIndex(question => question.text === q.text) + 1}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="flex justify-end">
+              <button
+                onClick={() => {
+                  setShowValidationModal(false);
+                  // Navigate to the first incomplete question
+                  if (incompleteQuestions.length > 0) {
+                    const firstIncompleteIndex = questions.findIndex(
+                      q => q.text === incompleteQuestions[0].text
+                    );
+                    if (firstIncompleteIndex !== -1) {
+                      setCurrentQuestionIndex(firstIncompleteIndex);
+                    }
+                  }
+                }}
+                className="px-4 py-2 bg-forestGreen text-white rounded-lg text-sm font-medium"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <main ref={mainRef} className="flex-1 p-3 md:p-4 overflow-y-auto pb-20 md:pb-4 relative">
+        {/* Swipe indicators - moved inside main to fix positioning */}
+        {assessmentStarted && !assessmentCompleted && (
+          <>
+            {!isFirstQuestion && (
+              <div className="fixed left-2 top-1/2 transform -translate-y-1/2 text-forestGreen opacity-20 md:hidden z-10">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+              </div>
+            )}
+            {!isLastQuestion && (
+              <div className="fixed right-2 top-1/2 transform -translate-y-1/2 text-forestGreen opacity-20 md:hidden z-10">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+              </div>
+            )}
+          </>
+        )}
+      
         {error && (
           <div className="bg-richRed bg-opacity-10 border border-richRed text-richRed p-2 md:p-3 rounded-md mb-3 md:mb-4 text-sm">
             <p><strong>Error:</strong> {error}</p>
           </div>
         )}
+        
         <div className="flex justify-between items-center mb-2 md:mb-3">
           <h1 className="text-lg md:text-xl font-bold text-forestGreen">Assessment</h1>
           <Timer timeElapsed={timeElapsed} />
         </div>
+        
         {questions.length > 0 ? (
           <QuestionCard 
             question={questions[currentQuestionIndex]}
@@ -588,8 +742,8 @@ Remember, your output must be a valid JSON array of strings in this exact format
             onAnswerChange={handleAnswerChange}
             onNext={handleNextQuestion}
             onPrev={handlePrevQuestion}
-            isFirstQuestion={currentQuestionIndex === 0}
-            isLastQuestion={currentQuestionIndex === questions.length - 1}
+            isFirstQuestion={isFirstQuestion}
+            isLastQuestion={isLastQuestion}
             onSubmit={handleAssessmentCompletion}
           />
         ) : (

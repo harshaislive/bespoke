@@ -5,13 +5,19 @@ const QuestionNavigation = ({
   currentQuestionIndex, 
   onQuestionSelect,     
   onComplete,           
-  isCompleted           
+  isCompleted,
+  incompleteQuestions = []           
 }) => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   if (!questions || questions.length === 0) {
     return null; 
   }
+
+  // Check if a question is incomplete
+  const isQuestionIncomplete = (questionText) => {
+    return incompleteQuestions.some(q => q.text === questionText);
+  };
 
   // Mobile bottom navigation bar
   const MobileNav = () => (
@@ -67,31 +73,46 @@ const QuestionNavigation = ({
       {mobileNavOpen && (
         <div className="absolute bottom-full left-0 right-0 max-h-[40vh] overflow-y-auto bg-white border-t border-softGray shadow-lg p-3">
           <div className="flex flex-col gap-2">
-            {questions.map((question, index) => (
-              <button
-                key={index}
-                onClick={() => {
-                  onQuestionSelect(index);
-                  setMobileNavOpen(false);
-                }}
-                className={`
-                  flex items-center p-2.5 rounded-lg w-full mb-1
-                  transition-colors duration-200 text-sm
-                  ${currentQuestionIndex === index 
-                    ? 'bg-forestGreen text-white' 
-                    : 'bg-white text-charcoalGray hover:bg-softGray'}
-                `}
-                aria-label={`Go to question ${index + 1}`}
-                aria-current={currentQuestionIndex === index ? 'true' : 'false'}
-              >
-                <span className="flex items-center justify-center w-8 h-8 mr-2 rounded-full bg-softGray text-darkEarth font-medium">
-                  {index + 1}
-                </span>
-                <span className="line-clamp-2 text-left flex-1">
-                  {question.text ? question.text : `Question ${index + 1}`}
-                </span>
-              </button>
-            ))}
+            {questions.map((question, index) => {
+              const isIncomplete = isQuestionIncomplete(question.text);
+              return (
+                <button
+                  key={index}
+                  onClick={() => {
+                    onQuestionSelect(index);
+                    setMobileNavOpen(false);
+                  }}
+                  className={`
+                    flex items-center p-2.5 rounded-lg w-full mb-1
+                    transition-colors duration-200 text-sm
+                    ${currentQuestionIndex === index 
+                      ? 'bg-forestGreen text-white' 
+                      : isIncomplete 
+                        ? 'bg-white text-richRed border border-richRed' 
+                        : 'bg-white text-charcoalGray hover:bg-softGray'}
+                  `}
+                  aria-label={`Go to question ${index + 1}${isIncomplete ? ' (incomplete)' : ''}`}
+                  aria-current={currentQuestionIndex === index ? 'true' : 'false'}
+                >
+                  <span className={`flex items-center justify-center w-8 h-8 mr-2 rounded-full 
+                    ${currentQuestionIndex === index 
+                      ? 'bg-white text-forestGreen' 
+                      : isIncomplete 
+                        ? 'bg-richRed text-white' 
+                        : 'bg-softGray text-darkEarth'} font-medium`}>
+                    {index + 1}
+                  </span>
+                  <span className="line-clamp-2 text-left flex-1">
+                    {question.text ? question.text : `Question ${index + 1}`}
+                  </span>
+                  {isIncomplete && (
+                    <svg className="w-5 h-5 text-richRed ml-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                  )}
+                </button>
+              );
+            })}
           </div>
           
           {!isCompleted && (
@@ -113,28 +134,43 @@ const QuestionNavigation = ({
       <h2 className="text-base font-serif text-forestGreen mb-3 text-left">Questions</h2>
       
       <div className="flex flex-col gap-2">
-        {questions.map((question, index) => (
-          <button
-            key={index}
-            onClick={() => onQuestionSelect(index)}
-            className={`
-              flex items-center p-1.5 rounded-lg w-full mb-1.5
-              transition-colors duration-200 text-sm
-              ${currentQuestionIndex === index 
-                ? 'bg-forestGreen text-white' 
-                : 'bg-white text-charcoalGray hover:bg-white hover:text-richRed hover:border hover:border-richRed'}
-            `}
-            aria-label={`Go to question ${index + 1}`}
-            aria-current={currentQuestionIndex === index ? 'true' : 'false'}
-          >
-            <span className="flex items-center justify-center w-8 h-8 mr-2 rounded-full bg-softGray text-darkEarth font-medium">
-              {index + 1}
-            </span>
-            <span className="line-clamp-1 text-left">
-              {question.text ? question.text.substring(0, 30) + (question.text.length > 30 ? '...' : '') : `Question ${index + 1}`}
-            </span>
-          </button>
-        ))}
+        {questions.map((question, index) => {
+          const isIncomplete = isQuestionIncomplete(question.text);
+          return (
+            <button
+              key={index}
+              onClick={() => onQuestionSelect(index)}
+              className={`
+                flex items-center p-1.5 rounded-lg w-full mb-1.5
+                transition-colors duration-200 text-sm
+                ${currentQuestionIndex === index 
+                  ? 'bg-forestGreen text-white' 
+                  : isIncomplete 
+                    ? 'bg-white text-richRed border border-richRed' 
+                    : 'bg-white text-charcoalGray hover:bg-white hover:text-richRed hover:border hover:border-richRed'}
+              `}
+              aria-label={`Go to question ${index + 1}${isIncomplete ? ' (incomplete)' : ''}`}
+              aria-current={currentQuestionIndex === index ? 'true' : 'false'}
+            >
+              <span className={`flex items-center justify-center w-8 h-8 mr-2 rounded-full 
+                ${currentQuestionIndex === index 
+                  ? 'bg-white text-forestGreen' 
+                  : isIncomplete 
+                    ? 'bg-richRed text-white' 
+                    : 'bg-softGray text-darkEarth'} font-medium`}>
+                {index + 1}
+              </span>
+              <span className="line-clamp-1 text-left">
+                {question.text ? question.text.substring(0, 30) + (question.text.length > 30 ? '...' : '') : `Question ${index + 1}`}
+              </span>
+              {isIncomplete && (
+                <svg className="w-5 h-5 text-richRed ml-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+              )}
+            </button>
+          );
+        })}
       </div>
       
       {!isCompleted && (

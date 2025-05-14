@@ -15,6 +15,9 @@ const QuestionCard = ({
 }) => {
   const textareaRef = useRef(null);
   
+  // Check if answer is empty
+  const isAnswerEmpty = !answer || answer.trim() === '';
+  
   // Handle text input changes
   const handleChange = (e) => {
     // Make sure we have a question before trying to access its text property
@@ -46,7 +49,7 @@ const QuestionCard = ({
       <ProgressIndicator currentQuestion={questionNumber} totalQuestions={totalQuestions} />
       
       <div className="flex items-start mb-3 md:mb-4">
-        <span className="flex-shrink-0 w-7 h-7 md:w-8 md:h-8 bg-forestGreen text-white rounded-full flex items-center justify-center mr-2 md:mr-3 font-bold text-sm md:text-base mt-0.5">
+        <span className={`flex-shrink-0 w-7 h-7 md:w-8 md:h-8 ${isAnswerEmpty ? 'bg-richRed' : 'bg-forestGreen'} text-white rounded-full flex items-center justify-center mr-2 md:mr-3 font-bold text-sm md:text-base mt-0.5`}>
           {questionNumber}
         </span>
         <h2 className="question-title font-serif text-base md:text-lg text-darkEarth font-medium">
@@ -55,14 +58,29 @@ const QuestionCard = ({
       </div>
       
       <div className="answer-area mb-3 md:mb-4">
-        <textarea
-          ref={textareaRef}
-          rows="4"
-          className="w-full p-3 border border-softGray rounded-lg resize-none focus:border-forestGreen focus:ring-1 focus:ring-forestGreen focus:outline-none transition-colors min-h-[120px] text-charcoalGray text-base md:text-base"
-          placeholder="Type your answer here..."
-          value={answer || ''}
-          onChange={handleChange}
-        />
+        <div className="relative">
+          <textarea
+            ref={textareaRef}
+            rows="4"
+            className={`w-full p-3 border rounded-lg resize-none focus:ring-1 focus:outline-none transition-colors min-h-[120px] text-charcoalGray text-base md:text-base
+              ${isAnswerEmpty 
+                ? 'border-richRed focus:border-richRed focus:ring-richRed bg-red-50' 
+                : 'border-softGray focus:border-forestGreen focus:ring-forestGreen'}`}
+            placeholder="Type your answer here..."
+            value={answer || ''}
+            onChange={handleChange}
+          />
+          {isAnswerEmpty && (
+            <div className="absolute top-3 right-3 text-richRed">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+              </svg>
+            </div>
+          )}
+        </div>
+        {isAnswerEmpty && (
+          <p className="text-xs text-richRed mt-1">This question requires an answer</p>
+        )}
         <div className="flex justify-end mt-1">
           <button 
             onClick={() => window.navigator.vibrate && window.navigator.vibrate(10)}
