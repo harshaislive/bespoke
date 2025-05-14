@@ -7,7 +7,6 @@ const QuestionNavigation = ({
   onComplete,           
   isCompleted           
 }) => {
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   if (!questions || questions.length === 0) {
     return null; 
