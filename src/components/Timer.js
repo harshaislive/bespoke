@@ -19,9 +19,12 @@ const Timer = ({ timeElapsed }) => {
   };
   
   return (
-    <div className="timer text-right font-medium text-lg">
-      <span className="font-serif text-forestGreen">Time Elapsed:</span>{' '}
-      <span className={getTimeClass()}>
+    <div className="timer text-right font-medium text-sm md:text-base flex items-center">
+      <svg className="w-4 h-4 mr-1 text-forestGreen hidden md:inline" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      <span className="font-serif text-forestGreen md:inline hidden">Time Elapsed:</span>
+      <span className={`${getTimeClass()} md:ml-1`}>
         {formatTime(timeElapsed)}
       </span>
     </div>

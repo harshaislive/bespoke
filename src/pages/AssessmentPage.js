@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import OpenAI from 'openai';
 import UserInfoForm from '../components/UserInfoForm';
 import QuestionNavigation from '../components/QuestionNavigation';
@@ -7,6 +7,7 @@ import Timer from '../components/Timer';
 import { sessionAPI } from '../services/supabase';
 import AssessmentLoading from '../components/AssessmentLoading';
 import { useAuth } from '../context/AuthContext';
+import html2pdf from 'html2pdf.js';
 
 const AssessmentPage = () => {
   const { user } = useAuth();
@@ -32,6 +33,19 @@ const AssessmentPage = () => {
   // Timer state
   const [timeElapsed, setTimeElapsed] = useState(0); // Start from 0 seconds
   const [documentContext, setDocumentContext] = useState('No document context available.');
+
+  const summaryRef = useRef(null);
+
+  // New state for collapsible questions in summary
+  const [expandedQuestions, setExpandedQuestions] = useState({});
+  
+  // Function to toggle question expansion
+  const toggleQuestionExpansion = (index) => {
+    setExpandedQuestions(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+  };
 
   // Update email in userInfo when auth user changes
   useEffect(() => {
@@ -250,7 +264,7 @@ Remember, your output must be a valid JSON array of strings in this exact format
       
       console.log('Calling OpenAI API to generate assessment questions...');
       const openAICompletion = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-4.1",
         messages: [{ role: "system", content: finalSystemPrompt }],
       });
 
@@ -404,6 +418,20 @@ Remember, your output must be a valid JSON array of strings in this exact format
     setTimeElapsed(0);
   };
 
+  const handleDownloadPDF = () => {
+    const element = summaryRef.current;
+    
+    const options = {
+      margin: 10,
+      filename: `assessment_summary_${userInfo.name.replace(/\s+/g, '_')}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    
+    html2pdf().set(options).from(element).save();
+  };
+
   // Display loading indicator
   if (isLoadingAssessment) {
     return <AssessmentLoading />;
@@ -434,15 +462,15 @@ Remember, your output must be a valid JSON array of strings in this exact format
   // Assessment summary after completion
   if (assessmentCompleted) {
     return (
-      <div className="h-screen bg-offWhite p-4 overflow-hidden">
+      <div className="min-h-screen bg-offWhite p-3 md:p-4 overflow-hidden">
         <div className="max-w-4xl mx-auto h-full flex flex-col">
-          <div className="bg-white rounded-xl shadow-lg p-4 flex-1 overflow-y-auto border-t-4 border-richRed">
-            <h1 className="text-2xl font-bold text-forestGreen mb-1 text-center">Assessment Completed!</h1>
-            <p className="text-charcoalGray mb-3 text-center">Thank you, {userInfo.name}, for completing the assessment.</p>
+          <div ref={summaryRef} className="bg-white rounded-xl shadow-lg p-3 md:p-4 flex-1 overflow-y-auto border-t-4 border-richRed">
+            <h1 className="text-xl md:text-2xl font-bold text-forestGreen mb-1 text-center">Assessment Completed!</h1>
+            <p className="text-charcoalGray mb-3 text-center text-sm md:text-base">Thank you, {userInfo.name}, for completing the assessment.</p>
             
             {isDemoMode && (
-              <div className="bg-gray-100 p-3 rounded-lg mb-3 text-center">
-                <p className='text-sm text-gray-600'>
+              <div className="bg-gray-100 p-2 md:p-3 rounded-lg mb-3 text-center">
+                <p className='text-xs md:text-sm text-gray-600'>
                   (Demo Mode)
                   {error && error.includes('OpenAI API key is missing') && " - OpenAI features disabled."}
                   {error && error.includes('Document context missing') && " - Knowledge base features limited."}
@@ -450,33 +478,69 @@ Remember, your output must be a valid JSON array of strings in this exact format
               </div>
             )}
             
-            <div className="mb-3">
-              <h2 className="text-lg font-serif text-darkEarth mb-2 pb-1 border-b border-softGray">Your Response Summary</h2>
+            <div className="mb-4">
+              <h2 className="text-md md:text-lg font-serif text-darkEarth mb-2 pb-1 border-b border-softGray">Your Response Summary</h2>
               
               {questions.map((question, index) => (
-                <div key={index} className="mb-3 p-3 bg-offWhite rounded-lg">
-                  <div className="flex items-start mb-2">
-                    <span className="flex-shrink-0 w-6 h-6 bg-forestGreen text-white rounded-full flex items-center justify-center mr-2 font-bold text-sm">
-                      {index + 1}
-                    </span>
-                    <h3 className="text-darkEarth font-medium text-sm">{question.text}</h3>
-                  </div>
+                <div key={index} className="mb-2 md:mb-3 border border-softGray rounded-lg overflow-hidden">
+                  <button 
+                    onClick={() => toggleQuestionExpansion(index)}
+                    className="w-full text-left p-2 md:p-3 bg-offWhite flex items-start justify-between hover:bg-softGray transition-colors duration-200"
+                  >
+                    <div className="flex items-start">
+                      <span className="flex-shrink-0 w-6 h-6 bg-forestGreen text-white rounded-full flex items-center justify-center mr-2 font-bold text-sm mt-0.5">
+                        {index + 1}
+                      </span>
+                      <h3 className="text-darkEarth font-medium text-sm md:text-base flex-1 pr-2">
+                        {question.text ? 
+                          (question.text.length > 80 ? 
+                            `${question.text.substring(0, 80)}...` : 
+                            question.text) : 
+                          `Question ${index + 1}`}
+                      </h3>
+                    </div>
+                    <svg 
+                      className={`w-5 h-5 text-charcoalGray transition-transform duration-200 ${expandedQuestions[index] ? 'transform rotate-180' : ''}`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24" 
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                  </button>
                   
-                  <div className="ml-8 bg-white p-2 rounded border border-softGray">
-                    <p className="text-charcoalGray whitespace-pre-wrap text-sm max-h-24 overflow-y-auto">
-                      {answers[question.text] || <span className="italic text-gray-400">No answer provided</span>}
-                    </p>
-                  </div>
+                  {expandedQuestions[index] && (
+                    <div className="p-3 border-t border-softGray">
+                      <p className="text-sm md:text-base text-darkEarth font-medium mb-2">
+                        {question.text}
+                      </p>
+                      <div className="bg-white p-2 md:p-3 rounded border border-softGray">
+                        <p className="text-charcoalGray whitespace-pre-wrap text-sm max-h-48 overflow-y-auto">
+                          {answers[question.text] || <span className="italic text-gray-400">No answer provided</span>}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
             
-            <div className="flex justify-center">
+            <div className="flex flex-col md:flex-row justify-center space-y-3 md:space-y-0 md:space-x-4 pb-4 md:pb-0">
               <button 
                 onClick={handleTryAgain} 
-                className="px-6 py-3 rounded-lg bg-forestGreen text-white font-bold shadow-md hover:bg-opacity-90 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-forestGreen focus:ring-opacity-50"
+                className="px-6 py-3 rounded-lg bg-forestGreen text-white font-bold shadow-md hover:bg-opacity-90 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-forestGreen focus:ring-opacity-50 text-sm md:text-base"
               >
                 Start New Assessment
+              </button>
+              <button 
+                onClick={handleDownloadPDF} 
+                className="px-6 py-3 rounded-lg bg-richRed text-white font-bold shadow-md hover:bg-opacity-90 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-richRed focus:ring-opacity-50 flex items-center justify-center text-sm md:text-base"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                Download PDF
               </button>
             </div>
           </div>
@@ -497,7 +561,7 @@ Remember, your output must be a valid JSON array of strings in this exact format
 
   // Main assessment interface
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-offWhite overflow-hidden">
+    <div className="flex flex-col h-screen bg-offWhite overflow-hidden">
       <QuestionNavigation 
         questions={questions}
         currentQuestionIndex={currentQuestionIndex}
@@ -505,15 +569,14 @@ Remember, your output must be a valid JSON array of strings in this exact format
         onComplete={handleAssessmentCompletion} 
         isCompleted={assessmentCompleted}
       />
-      <main className="flex-1 p-4 overflow-y-auto">
+      <main className="flex-1 p-3 md:p-4 overflow-y-auto pb-20 md:pb-4">
         {error && (
-          <div className="bg-richRed text-white p-3 rounded-md mb-4 text-sm">
+          <div className="bg-richRed bg-opacity-10 border border-richRed text-richRed p-2 md:p-3 rounded-md mb-3 md:mb-4 text-sm">
             <p><strong>Error:</strong> {error}</p>
-            {/* Optionally add a dismiss button for non-critical errors */}
           </div>
         )}
-        <div className="flex justify-between items-center mb-3">
-          <h1 className="text-xl font-bold text-forestGreen">Assessment Questions</h1>
+        <div className="flex justify-between items-center mb-2 md:mb-3">
+          <h1 className="text-lg md:text-xl font-bold text-forestGreen">Assessment</h1>
           <Timer timeElapsed={timeElapsed} />
         </div>
         {questions.length > 0 ? (
